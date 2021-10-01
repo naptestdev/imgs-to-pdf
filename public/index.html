@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Images To PDF</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-F3w7mX95PdgyTmZZMECAngseQB83DfGTowi0iMjiWaeVhAn4FJkqJByhZMI3AhiU" crossorigin="anonymous" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta2/css/all.min.css" />
+    <style>
+      .ellipsis::after {
+        content: var(--ellipsis-content);
+        animation: ellipsis 1s infinite;
+      }
+      @keyframes ellipsis {
+        0% {
+          --ellipsis-content: "";
+        }
+        30% {
+          --ellipsis-content: ".";
+        }
+        60% {
+          --ellipsis-content: "..";
+        }
+        90% {
+          --ellipsis-content: "...";
+        }
+        100% {
+          --ellipsis-content: "";
+        }
+      }
+    </style>
+  </head>
+  <body style="margin: 0; min-height: 100vh">
+    <div id="main" class="d-flex flex-column justify-content-center align-items-center vh-100">
+      <h1>Images To PDF</h1>
+      <img src="/imgtopdf.png" style="max-width: 100%; height: auto" alt="" />
+      <input multiple type="file" hidden id="file" name="file" />
+      <button onclick="document.querySelector('#file').click()" type="button" class="btn btn-primary btn-lg">
+        <i class="fa fa-upload"></i>
+        <span>Upload Images</span>
+      </button>
+    </div>
+    <script>
+      let input = document.querySelector("input");
+      let result = {};
+      input.addEventListener("change", (e) => {
+        document.querySelector("#main").innerHTML = `
+        <h1 class="ellipsis">Loading</h1>
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+        `;
+
+        Object.keys(input.files).map((i) => {
+          const formData = new FormData();
+          formData.append("file", input.files[i]);
+
+          fetch("/upload", {
+            method: "POST",
+            body: formData,
+          })
+            .then((res) => {
+              if (res.status === 200) return res.text();
+              else throw new Error();
+            })
+            .then((data) => {
+              result[i] = data;
+              if (Object.keys(result).length === Object.keys(input.files).length) {
+                window.location.href = `/pending?images=${Object.keys(result)
+                  .map((i) => result[i])
+                  .join(",")}`;
+              }
+            })
+            .catch((err) => {
+              console.log(err);
+              document.querySelector(".file").style.display = "none";
+              document.querySelector("progress").style.display = "none";
+              document.querySelector(".notification").classList.remove("is-hidden");
+            });
+        });
+      });
+    </script>
+  </body>
+</html>
